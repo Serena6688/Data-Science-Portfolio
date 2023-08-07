@@ -4,7 +4,7 @@ This repository contains Python code examples for various data science tasks. Th
 
 ## 1. Python Basics
 
-File: `python_basics.ipynb`(https://github.com/Serena6688/Programmer-Portfolio/blob/main/python_basics.ipynb)
+File: `python_basics.ipynb(https://github.com/Serena6688/Programmer-Portfolio/blob/main/python_basics.ipynb)`
 
 Description: This Jupyter Notebook contains basic Python functions, for/while loops, and other fundamental concepts in Python programming. It serves as a starting point to understand the basics of Python.
 
