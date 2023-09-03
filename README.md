@@ -38,5 +38,6 @@ File: [My Specializations & Certifications. pdf](https://github.com/Serena6688/P
 
 Description: This PDF provides a concise summary of my expertise in four key areas: Programming, Data Science, Mathematics, and Management. It also showcases the certifications I have acquired throughout my learning journey.
 
+##
 Feel free to explore each file to learn more about the specific concepts and techniques covered in this repository. 
 #### Made by Serena with ❤️
