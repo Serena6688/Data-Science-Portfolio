@@ -4,7 +4,7 @@ This repository contains Python code examples for various data science tasks. Th
 
 ## 1. Customer Targeting Strategy
 
-File: [Customer Targeting Strategy]([https://github.com/Serena6688/Programmer-Portfolio/blob/main/python_basics.ipynb](https://github.com/Serena6688/Data-Science-Portfolio/blob/main/Customer%20Targeting%20Strategy))
+File: [Customer Targeting Strategy](https://github.com/Serena6688/Data-Science-Portfolio/blob/main/Customer%20Targeting%20Strategy)
 
 Description: The Python and SQL code examples provided herein are simulated demonstrations created solely for illustrative purposes. 
 
