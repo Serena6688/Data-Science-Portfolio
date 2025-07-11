@@ -38,7 +38,7 @@ File: [ml_kmeans.ipynb](https://github.com/Serena6688/Programmer-Portfolio/blob/
 
 Description: This Jupyter Notebook focuses on k-means clustering, a popular unsupervised machine learning algorithm. It includes an implementation of the k-means algorithm using the scikit-learn library and demonstrates how to cluster data points based on their similarity.
 
-## 6. My Specializations & Certifications
+## 7. My Specializations & Certifications
 
 File: [My Specializations & Certifications. pdf](https://github.com/Serena6688/Programmer-Portfolio/blob/main/My%20Specializations%20%26%20Certifications.pdf)
 
