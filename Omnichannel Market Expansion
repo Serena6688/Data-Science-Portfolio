@@ -1,0 +1,220 @@
+# The Python and SQL code examples provided herein are simulated demonstrations 
+# created solely for illustrative purposes. 
+# They do not contain, reference, or derive from any proprietary 
+# Stanley Black & Decker (DeWalt) systems, databases, or confidential business logic.
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# 1. Data Loading and Preparation
+def load_and_prepare_data():
+    # Simulate loading data from various sources
+    # In a real scenario, this would connect to databases or read files
+    print("Loading and preparing data...")
+    
+    # Create sample transaction data
+    dates = pd.date_range('2019-01-01', '2021-12-31')
+    products = ['Drill_12V', 'Tool_Set', 'Screwdriver', 'Hammer', 'Wrench']
+    channels = ['Tmall', 'JD', 'Pinduoduo', 'Offline']
+    
+    np.random.seed(42)
+    data = {
+        'date': np.random.choice(dates, 10000),
+        'product': np.random.choice(products, 10000),
+        'channel': np.random.choice(channels, 10000),
+        'quantity': np.random.randint(1, 10, 10000),
+        'price': np.random.uniform(100, 500, 10000),
+        'discount': np.random.uniform(0.7, 1, 10000),
+        'campaign': np.random.choice(['618', 'Double11', 'None'], 10000, p=[0.2, 0.2, 0.6])
+    }
+    
+    df = pd.DataFrame(data)
+    df['revenue'] = df['quantity'] * df['price'] * df['discount']
+    
+    # Add product categories based on the analysis
+    df['category'] = df['product'].apply(lambda x: 'Power Tools' if x == 'Drill_12V' else 'Hand Tools')
+    
+    return df
+
+# 2. Product Evaluation Analysis
+def product_evaluation_analysis(df):
+    print("\nPerforming product evaluation analysis...")
+    
+    # Group by product to calculate metrics
+    product_stats = df.groupby('product').agg({
+        'revenue': ['sum', 'count'],
+        'quantity': 'sum',
+        'price': 'mean'
+    }).reset_index()
+    
+    product_stats.columns = ['product', 'total_gmv', 'transactions', 'total_units', 'avg_price']
+    
+    # Calculate growth rate (simplified - would normally compare periods)
+    product_stats['growth_rate'] = np.random.uniform(0, 30, len(product_stats))
+    
+    # Calculate GMV contribution rate
+    total_gmv = product_stats['total_gmv'].sum()
+    product_stats['gmv_contribution'] = (product_stats['total_gmv'] / total_gmv) * 100
+    
+    # Categorize products based on thresholds from the methodology
+    conditions = [
+        (product_stats['growth_rate'] > 15) & (product_stats['gmv_contribution'] > 0.5),
+        (product_stats['growth_rate'] > 15) & (product_stats['gmv_contribution'] <= 0.5),
+        (product_stats['growth_rate'] <= 15) & (product_stats['gmv_contribution'] > 0.5),
+        (product_stats['growth_rate'] <= 15) & (product_stats['gmv_contribution'] <= 0.5)
+    ]
+    
+    categories = ['Top Sellers', 'Traffic Driver', 'Profit Product', 'Dead Stock']
+    product_stats['product_category'] = np.select(conditions, categories)
+    
+    # Visualization
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(data=product_stats, x='gmv_contribution', y='growth_rate', 
+                    hue='product_category', size='total_gmv', sizes=(100, 1000))
+    plt.title('Product Evaluation Quadrant Analysis')
+    plt.xlabel('GMV Contribution Rate (%)')
+    plt.ylabel('Sales Growth Rate (%)')
+    plt.axhline(15, color='gray', linestyle='--')
+    plt.axvline(0.5, color='gray', linestyle='--')
+    plt.grid(True)
+    plt.show()
+    
+    return product_stats
+
+# 3. Competitiveness Analysis
+def competitiveness_analysis():
+    print("\nPerforming competitiveness analysis...")
+    
+    # Simulate competitor price data
+    competitors = ['Stanley', 'DeWalt', 'Black+Decker', 'Bosch', 'Makita']
+    products = ['Drill_12V', 'Tool_Set', 'Screwdriver_Set']
+    
+    data = []
+    for product in products:
+        for brand in competitors:
+            if product == 'Drill_12V':
+                base_price = np.random.uniform(150, 300)
+            elif product == 'Tool_Set':
+                base_price = np.random.uniform(200, 500)
+            else:
+                base_price = np.random.uniform(50, 150)
+                
+            # Add some brand-specific pricing patterns
+            if brand == 'DeWalt':
+                base_price *= 1.1  # Premium pricing
+            elif brand == 'Black+Decker':
+                base_price *= 0.9  # Value pricing
+                
+            promo_price = base_price * np.random.uniform(0.7, 0.9)
+            
+            data.append({
+                'product': product,
+                'brand': brand,
+                'base_price': round(base_price, 2),
+                'promo_price': round(promo_price, 2)
+            })
+    
+    price_df = pd.DataFrame(data)
+    
+    # Visualization
+    plt.figure(figsize=(12, 6))
+    sns.barplot(data=price_df, x='product', y='base_price', hue='brand')
+    plt.title('Competitor Price Comparison by Product')
+    plt.ylabel('Price (RMB)')
+    plt.xlabel('Product')
+    plt.xticks(rotation=45)
+    plt.show()
+    
+    return price_df
+
+# 4. Promotion Effectiveness Analysis
+def promotion_effectiveness_analysis(df):
+    print("\nAnalyzing promotion effectiveness...")
+    
+    # Calculate daily metrics
+    daily_metrics = df.groupby(['date', 'campaign']).agg({
+        'revenue': 'sum',
+        'quantity': 'sum',
+        'transactions': 'count'
+    }).reset_index()
+    
+    # Calculate ROAS-like metric (simplified)
+    daily_metrics['roas'] = daily_metrics['revenue'] / (daily_metrics['quantity'] * daily_metrics['transactions'])
+    
+    # Compare promotional vs non-promotional days
+    promo_results = daily_metrics.groupby('campaign').agg({
+        'revenue': 'mean',
+        'quantity': 'mean',
+        'roas': 'mean'
+    })
+    
+    # Visualization
+    plt.figure(figsize=(12, 5))
+    promo_results[['revenue', 'quantity']].plot(kind='bar', subplots=True, layout=(1, 2))
+    plt.suptitle('Promotion Performance Comparison')
+    plt.tight_layout()
+    plt.show()
+    
+    return promo_results
+
+# 5. Market Segmentation Analysis
+def market_segmentation_analysis(df):
+    print("\nPerforming market segmentation analysis...")
+    
+    # Create customer segments based on purchasing behavior
+    customer_data = df.groupby(['channel', 'category']).agg({
+        'revenue': 'sum',
+        'transactions': 'count',
+        'quantity': 'sum'
+    }).reset_index()
+    
+    # Normalize data for clustering
+    scaler = StandardScaler()
+    features = customer_data[['revenue', 'transactions', 'quantity']]
+    scaled_features = scaler.fit_transform(features)
+    
+    # Apply K-means clustering
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    customer_data['segment'] = kmeans.fit_predict(scaled_features)
+    
+    # Visualization
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(data=customer_data, x='revenue', y='transactions', 
+                    hue='segment', style='channel', size='quantity', sizes=(50, 200))
+    plt.title('Market Segmentation by Channel and Category')
+    plt.xlabel('Total Revenue')
+    plt.ylabel('Number of Transactions')
+    plt.grid(True)
+    plt.show()
+    
+    return customer_data
+
+# Main execution
+if __name__ == "__main__":
+    # Load and prepare data
+    transaction_df = load_and_prepare_data()
+    
+    # Perform product evaluation
+    product_stats = product_evaluation_analysis(transaction_df)
+    print("\nProduct Evaluation Results:")
+    print(product_stats[['product', 'product_category', 'total_gmv', 'growth_rate', 'gmv_contribution']])
+    
+    # Competitiveness analysis
+    price_comparison = competitiveness_analysis()
+    print("\nCompetitor Price Analysis:")
+    print(price_comparison)
+    
+    # Promotion effectiveness
+    promo_results = promotion_effectiveness_analysis(transaction_df)
+    print("\nPromotion Effectiveness:")
+    print(promo_results)
+    
+    # Market segmentation
+    segments = market_segmentation_analysis(transaction_df)
+    print("\nMarket Segmentation Results:")
+    print(segments)

@@ -1,0 +1,281 @@
+# The Python and SQL code examples provided herein are simulated demonstrations 
+# created solely for illustrative purposes. 
+# They do not contain, reference, or derive from any proprietary 
+# Nivea systems, databases, or confidential business logic.
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from scipy.stats import pearsonr, spearmanr
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# 1. Data Preparation (Simulating Alibaba e-commerce data)
+def generate_synthetic_data(num_samples=100000):
+    """Generate synthetic e-commerce user data with 4 core dimensions and 29 categories"""
+    # Basic Info
+    data = {
+        'age': np.random.randint(18, 65, size=num_samples),
+        'gender': np.random.choice(['Male', 'Female'], size=num_samples, p=[0.6, 0.4]),
+        'city_tier': np.random.choice([1, 2, 3], size=num_samples, p=[0.3, 0.4, 0.3]),
+        
+        # Category Performance (skincare related)
+        'annual_skincare_spend': np.random.lognormal(mean=5, sigma=1, size=num_samples),
+        'skincare_purchase_freq': np.random.poisson(lam=6, size=num_samples),
+        'pref_men_skincare': np.random.uniform(0, 1, size=num_samples),
+        'price_preference': np.random.choice(['Low', 'Medium', 'High'], size=num_samples, p=[0.4, 0.4, 0.2]),
+        
+        # Lifestyle Interests
+        'fitness_interest': np.random.uniform(0, 1, size=num_samples),
+        'grooming_interest': np.random.uniform(0, 1, size=num_samples),
+        'luxury_interest': np.random.uniform(0, 1, size=num_samples),
+        
+        # Brand Engagement
+        'nivea_brand_affinity': np.random.uniform(0, 1, size=num_samples),
+        'competitor_brand_affinity': np.random.uniform(0, 1, size=num_samples),
+        'ad_click_rate': np.random.beta(a=1, b=10, size=num_samples),
+        'purchase_conversion': np.random.binomial(1, 0.1, size=num_samples)
+    }
+    
+    # Add 15 more simulated features to reach 29 categories
+    for i in range(15):
+        data[f'feature_{i}'] = np.random.normal(loc=0, scale=1, size=num_samples)
+    
+    df = pd.DataFrame(data)
+    
+    # Create some meaningful correlations
+    df['nivea_brand_affinity'] = df['grooming_interest'] * 0.7 + np.random.normal(scale=0.1, size=num_samples)
+    df['annual_skincare_spend'] = df['age'] * 20 + np.random.normal(scale=100, size=num_samples)
+    
+    return df
+
+# Generate synthetic data
+print("Generating synthetic e-commerce data...")
+df = generate_synthetic_data()
+print(f"Data shape: {df.shape}")
+
+# 2. Data Preprocessing
+def preprocess_data(df):
+    """Preprocess the data for modeling"""
+    # Convert categorical variables
+    df = pd.get_dummies(df, columns=['gender', 'price_preference', 'city_tier'], drop_first=True)
+    
+    # Separate features and target
+    X = df.drop('purchase_conversion', axis=1)
+    y = df['purchase_conversion']
+    
+    # Standardize numerical features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    return X_scaled, y, X.columns
+
+X, y, feature_names = preprocess_data(df)
+
+# 3. Feature Selection with Random Forest (Technique 1)
+print("\nRunning Random Forest for feature importance...")
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X, y)
+
+# Get feature importances
+importances = rf.feature_importances_
+feature_importance = pd.DataFrame({'feature': feature_names, 'importance': importances})
+feature_importance = feature_importance.sort_values('importance', ascending=False)
+
+# Select top 14 features as mentioned in the project (PICK 14 IMPORTANT FEATURES)
+top_features = feature_importance.head(14)['feature'].values
+print("\nTop 14 important features:")
+print(top_features)
+
+# Filter dataset to only include important features
+X_important = pd.DataFrame(X, columns=feature_names)[top_features]
+
+# 4. Dimensionality Reduction with PCA (Technique 2)
+print("\nApplying PCA for dimensionality reduction...")
+pca = PCA(n_components=0.95)  # Retain 95% of variance
+X_pca = pca.fit_transform(X_important)
+
+print(f"Reduced from {X_important.shape[1]} to {X_pca.shape[1]} dimensions while retaining 95% variance")
+
+# 5. K-Means Clustering with Optimal K Selection (Technique 3)
+def find_optimal_k(X, max_k=10):
+    """Find optimal number of clusters using Elbow Method and Silhouette Analysis"""
+    wcss = []
+    silhouette_scores = []
+    k_values = range(2, max_k+1)
+    
+    for k in k_values:
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(X)
+        wcss.append(kmeans.inertia_)
+        
+        if k > 1:  # Silhouette score requires at least 2 clusters
+            silhouette_scores.append(silhouette_score(X, kmeans.labels_))
+    
+    # Plot Elbow Method
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(k_values, wcss, 'bo-')
+    plt.xlabel('Number of clusters (k)')
+    plt.ylabel('Within-cluster sum of squares (WCSS)')
+    plt.title('Elbow Method')
+    
+    # Plot Silhouette Scores
+    plt.subplot(1, 2, 2)
+    plt.plot(k_values[1:], silhouette_scores, 'bo-')
+    plt.xlabel('Number of clusters (k)')
+    plt.ylabel('Silhouette Score')
+    plt.title('Silhouette Analysis')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return k_values, wcss, silhouette_scores
+
+print("\nDetermining optimal number of clusters...")
+k_values, wcss, silhouette_scores = find_optimal_k(X_pca, max_k=10)
+
+# Based on the plots (project used K=5 for Nivea Men, K=6 for industry clusters)
+optimal_k = 5
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+clusters = kmeans.fit_predict(X_pca)
+
+# Add clusters back to original data
+df['cluster'] = clusters
+
+# 6. Segment Evaluation with Correlation Analysis (Technique 4)
+def evaluate_segments(df):
+    """Evaluate segments using correlation analysis and scoring"""
+    # Calculate segment statistics
+    segment_stats = df.groupby('cluster').agg({
+        'nivea_brand_affinity': 'mean',
+        'annual_skincare_spend': 'mean',
+        'purchase_conversion': 'mean',
+        'age': 'mean'
+    }).rename(columns={
+        'nivea_brand_affinity': 'brand_affinity',
+        'annual_skincare_spend': 'avg_spend',
+        'purchase_conversion': 'conversion_rate'
+    })
+    
+    # Calculate Pearson correlation between brand affinity and conversion rate
+    corr, _ = pearsonr(df['nivea_brand_affinity'], df['purchase_conversion'])
+    print(f"\nPearson correlation between brand affinity and conversion: {corr:.2f}")
+    
+    # Calculate Spearman correlation for non-linear relationships (used in project)
+    spear_corr, _ = spearmanr(df['nivea_brand_affinity'], df['purchase_conversion'])
+    print(f"Spearman correlation between brand affinity and conversion: {spear_corr:.2f}")
+    
+    # Create segment scoring (weights from project: Brand 25%, Category 25%, Pioneering 50%)
+    segment_stats['brand_score'] = segment_stats['brand_affinity'] * 0.25
+    segment_stats['category_score'] = segment_stats['avg_spend'] * 0.25
+    segment_stats['pioneering_score'] = (segment_stats['conversion_rate'] * 0.5)
+    segment_stats['total_score'] = (segment_stats['brand_score'] + 
+                                  segment_stats['category_score'] + 
+                                  segment_stats['pioneering_score'])
+    
+    # Normalize scores to 0-100 scale
+    segment_stats['total_score'] = (segment_stats['total_score'] / segment_stats['total_score'].max()) * 100
+    
+    return segment_stats.sort_values('total_score', ascending=False)
+
+print("\nEvaluating segments...")
+segment_evaluation = evaluate_segments(df)
+print("\nSegment Evaluation Results:")
+print(segment_evaluation)
+
+# 7. Predictive Modeling (RFM and Linear Regression)
+def build_predictive_models(df):
+    """Build predictive models for CLV and conversion"""
+    # RFM Analysis (Recency, Frequency, Monetary)
+    # Simulating RFM features (not in original synthetic data)
+    df['recency'] = np.random.randint(1, 365, size=len(df))  # Days since last purchase
+    df['frequency'] = df['skincare_purchase_freq']
+    df['monetary'] = df['annual_skincare_spend'] / df['frequency'].replace(0, 1)
+    
+    # Normalize RFM scores
+    df['rfm_score'] = (pd.qcut(df['recency'], q=5, labels=False, duplicates='drop') + 
+                      pd.qcut(df['frequency'], q=5, labels=False, duplicates='drop') + 
+                      pd.qcut(df['monetary'], q=5, labels=False, duplicates='drop'))
+    
+    # Linear Regression for CLV prediction
+    X_clv = df[['rfm_score', 'age', 'nivea_brand_affinity', 'grooming_interest']]
+    y_clv = df['annual_skincare_spend'] * 3  # Simulating 3-year CLV
+    
+    X_train, X_test, y_train, y_test = train_test_split(X_clv, y_clv, test_size=0.2, random_state=42)
+    
+    lr = LinearRegression()
+    lr.fit(X_train, y_train)
+    predictions = lr.predict(X_test)
+    mse = mean_squared_error(y_test, predictions)
+    print(f"\nCLV Prediction Model MSE: {mse:.2f}")
+    
+    return df, lr
+
+print("\nBuilding predictive models...")
+df, clv_model = build_predictive_models(df)
+
+# 8. Consumer Profiling and Visualization
+def profile_consumers(df):
+    """Create consumer profiles for each segment"""
+    # Profile the highest scoring segment (like "Seed group" with score 100 in project)
+    top_segment = segment_evaluation.index[0]
+    top_users = df[df['cluster'] == top_segment]
+    
+    print(f"\nProfiling top segment (Cluster {top_segment}):")
+    print(f"- Size: {len(top_users)} users ({len(top_users)/len(df)*100:.1f}% of total)")
+    print(f"- Avg age: {top_users['age'].mean():.1f}")
+    print(f"- Gender ratio: {top_users['gender_Male'].mean():.1%} male")
+    print(f"- Avg annual spend: ${top_users['annual_skincare_spend'].mean():.2f}")
+    print(f"- Conversion rate: {top_users['purchase_conversion'].mean():.1%}")
+    
+    # Visualization
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(data=df, x='cluster', y='annual_skincare_spend')
+    plt.title('Annual Skincare Spend by Cluster')
+    plt.ylabel('Annual Spend ($)')
+    plt.xlabel('Cluster')
+    plt.show()
+    
+    # Cross-tab of cluster vs gender
+    cross_tab = pd.crosstab(df['cluster'], df['gender_Male'].replace({1: 'Male', 0: 'Female'}))
+    cross_tab.plot(kind='bar', stacked=True)
+    plt.title('Gender Distribution by Cluster')
+    plt.ylabel('Count')
+    plt.show()
+
+print("\nCreating consumer profiles...")
+profile_consumers(df)
+
+# 9. A/B Testing Simulation (for ROAS improvement)
+def simulate_ab_test():
+    """Simulate A/B test results showing ROAS improvement"""
+    # Baseline ROAS
+    baseline_roas = 2.5  # For every $1 spent, $2.50 return
+    
+    # Simulate A/B test results (project mentioned 12.5% increase)
+    test_roas = baseline_roas * 1.125
+    
+    # For skincare sets (14% increase) and AHA lotion (22% increase)
+    skincare_set_roas = baseline_roas * 1.14
+    aha_lotion_roas = baseline_roas * 1.22
+    
+    print("\nA/B Testing Results (Simulated):")
+    print(f"- Baseline ROAS: {baseline_roas:.2f}")
+    print(f"- Test ROAS (after optimization): {test_roas:.2f} (+12.5%)")
+    print(f"- Skincare Set ROAS: {skincare_set_roas:.2f} (+14%)")
+    print(f"- AHA Lotion ROAS: {aha_lotion_roas:.2f} (+22%)")
+
+simulate_ab_test()
+
+print("\nAnalysis complete! Key segments identified and models built.")
